@@ -1,6 +1,7 @@
 package com.ecommerce.micrommerce.web.model;
 
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.validation.constraints.Min;
@@ -13,10 +14,10 @@ public class Product {
     private int id;
     @Size(min = 3, max = 25)
     private String nom;
-    @Min(value = 1)
     private int prix;
 
     //information que nous ne souhaitons pas exposer
+    @Column(name = "prix_achat")
     private int prixAchat;
 
     public Product() {

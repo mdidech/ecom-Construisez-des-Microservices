@@ -1,6 +1,7 @@
 package com.ecommerce.micrommerce.web.controller;
 
 import com.ecommerce.micrommerce.web.dao.ProductDao;
+import com.ecommerce.micrommerce.web.exceptions.ProduitGratuitException;
 import com.ecommerce.micrommerce.web.exceptions.ProduitIntrouvableException;
 import com.ecommerce.micrommerce.web.model.Product;
 import io.swagger.annotations.Api;
@@ -11,6 +12,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 
 @Api( "API pour les opérations CRUD sur les produits.")
@@ -23,24 +25,24 @@ public class ProductController {
         this.productDao = productDao;
     }
 
-    @DeleteMapping (value = "/Produits/{id}")
+    @DeleteMapping (value = "/produits/{id}")
     public void supprimerProduit(@PathVariable int id) {
         productDao.deleteById(id);
     }
 
-    @PutMapping (value = "/Produits")
+    @PutMapping (value = "/produits")
     public void updateProduit(@RequestBody Product product) {
         productDao.save(product);
     }
 
     //Récupérer la liste des produits
-    @GetMapping("/Produits")
+    @GetMapping("/produits")
     public List<Product> listeProduits() {
         return productDao.findAll();
     }
 
     @ApiOperation(value = "Récupère un produit grâce à son ID à condition que celui-ci soit en stock!")
-    @GetMapping(value = "/Produits/{id}")
+    @GetMapping(value = "/produits/{id}")
     public Product afficherUnProduit(@PathVariable int id) {
         Product produit = productDao.findById(id);
         if(produit==null) throw new ProduitIntrouvableException("Le produit avec l'id " + id + " est INTROUVABLE. Écran Bleu si je pouvais.");
@@ -52,14 +54,26 @@ public class ProductController {
         return productDao.findByPrixGreaterThan(prixLimit);
     }
 
-    @PostMapping(value = "/Produits")
-    public ResponseEntity<Product> ajouterProduit(@RequestBody @Valid Product product) {
-        Product productAdded = productDao.save(product);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(productAdded.getId())
-                .toUri();
-        return ResponseEntity.created(location).build();
+    @GetMapping("/adminproduits")
+    public HashMap<String,Integer> calculerMargeProduit(){
+        List<Product> produits=productDao.findAll();
+        HashMap<String,Integer> marges=new HashMap<>();
+        produits.forEach(produit->{
+            marges.put(produit.toString(),produit.getPrix()- produit.getPrixAchat());
+        });
+
+        return marges;
+    }
+
+    @GetMapping("/triproduits")
+    public List<Product> trierProduitsParOrdreAlphabetique(){
+        return productDao.findAllByOrderByNom();
+    }
+
+    @PostMapping("/produits")
+    public Product ajouterProduit(@Valid @RequestBody Product product){
+        System.out.println(product.toString());
+        if (product.getPrix()<=0) throw  new ProduitGratuitException("Le Prix de vente doit etre superieru à 0");
+        return productDao.save(product);
     }
 }
